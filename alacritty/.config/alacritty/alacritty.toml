@@ -1,0 +1,9 @@
+[terminal.shell]
+program = "/usr/bin/zsh"
+
+[window]
+opacity = 0.9
+
+[font]
+normal = { family = "RobotoMono Nerd Font", style = "Medium" }
+size = 12

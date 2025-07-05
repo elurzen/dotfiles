@@ -1,0 +1,10 @@
+[user]
+	name = Vanzen
+	email = eurzen@gmail.com
+
+[init]
+	defaultBranch = master
+
+[core]
+	autocrlf = input
+	pager = less -R
