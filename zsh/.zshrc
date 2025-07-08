@@ -25,5 +25,8 @@ alias la='ls -A --color=auto'
 alias grep='grep --color=auto'
 alias diff='diff --color=auto'
 
+#alias for vesktop to launch in scaled mode
+alias vesktop='vesktop --force-device-scale-factor=1.25'
+
 # Optional: colored prompt
 export PS1='%F{green}%n@%m%f:%F{blue}%~%f$ '
