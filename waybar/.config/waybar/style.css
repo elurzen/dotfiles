@@ -3,7 +3,9 @@
 	border-radius: 0;
 	font-family: "RobotoMono Nerd Font";
 	font-weight: 500;
-	font-size: 15px;
+	font-size: 17px;
+	/* color: #540400; */
+	color: #FFFFFF;
 	box-shadow: none;
 	text-shadow: none;
 	transition-duration: 0s;
@@ -58,7 +60,7 @@ window#waybar {
 #custom-spotify,
 #custom-weather,
 #custom-mail {
-	margin: 0px 6px -5px 10px;
+	margin: 0px 6px 0px 10px;
 	min-width: 25px;
 }
 
@@ -94,7 +96,3 @@ window#waybar {
 #custom-weather {
 	margin-right: 15px;
 }
-
-/* #custom-weather .weather-icon { */
-/* 	font-size: 20px; */
-/* } */

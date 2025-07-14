@@ -30,13 +30,13 @@ weather=($(cat $cachedir/$cachefile))
 IFS=$SAVEIFS
 
 # echo "DEBUG1" ${weather[1]}
-temperature=$(echo ${weather[1]} | sed -E 's/([[:digit:]]+)\.\./\1 to /g')
+temperature=$(echo ${weather[2]} | sed -E 's/([[:digit:]]+)\.\./\1 to /g')
 temperature=$(echo ${temperature} | sed -E 's/ //g')
 
 #echo ${weather[1]##*,}
 
 # https://fontawesome.com/icons?s=solid&c=weather
-case $(echo ${weather[2]##*,} | tr '[:upper:]' '[:lower:]') in
+case $(echo ${weather[1]##*,} | tr '[:upper:]' '[:lower:]') in
 "clear" | "sunny")
     condition="󰖨"
     ;;
@@ -79,4 +79,4 @@ esac
 #echo $temp $condition
 
 # echo -e "{\"text\":\""$temperature $condition"\", \"alt\":\""${weather[0]}"\", \"tooltip\":\""${weather[0]}: $temperature ${weather[1]}"\"}"
-echo -e '{"text":"'"$temperature"' <span size =\"x-large\">'"$condition"'</span>", "alt":"'"${weather[0]}"'", "tooltip":"'"${weather[0]}: $temperature ${weather[1]}"'"}'
+echo -e '{"text":"'"$temperature"' <span size =\"x-large\" rise=\"-3000\">'"$condition"'</span>", "alt":"'"${weather[0]}"'", "tooltip":"'"${weather[0]}: $temperature ${weather[1]}"'"}'
