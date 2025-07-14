@@ -1,0 +1,66 @@
+font=RobotoMono Nerd Font Medium
+background-color=#2d2d2d
+text-color=#ffffff
+border-color=#540400
+border-size=2
+border-radius=8
+padding=15
+margin=10
+
+# Positioning
+anchor=top-right
+width=400
+height=150
+
+# Behavior
+default-timeout=5000
+ignore-timeout=1
+max-visible=5
+sort=-time
+
+# Icons
+icon-path=/usr/share/icons/hicolor
+max-icon-size=48
+
+# Grouped notifications
+group-by=app-name
+max-history=20
+
+# Urgency levels
+[urgency=low]
+background-color=#2d2d2d
+border-color=#6b5b00
+default-timeout=3000
+
+[urgency=normal]
+background-color=#2d2d2d
+border-color=#540400
+default-timeout=5000
+
+[urgency=critical]
+background-color=#540400
+text-color=#ffffff
+border-color=#ff0000
+default-timeout=0
+
+# Application-specific settings
+[app-name=spotify]
+border-color=#1db954
+default-timeout=3000
+
+[app-name=volume]
+border-color=#cc6600
+default-timeout=2000
+
+[app-name=brightness]
+border-color=#ffa500
+default-timeout=2000
+
+# Category-specific settings
+[category=email]
+border-color=#0078d4
+default-timeout=8000
+
+[category=im]
+border-color=#00d084
+default-timeout=5000

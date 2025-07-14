@@ -5,7 +5,7 @@
 
     "modules-left": ["hyprland/workspaces"],
     "modules-center": ["hyprland/window"],
-    "modules-right": ["tray", "custom/spotify", "custom/weather", "custom/storage", "pulseaudio", "network", "idle_inhibitor", "clock"],
+    "modules-right": ["tray", "custom/spotify", "custom/weather", "pulseaudio", "network", "idle_inhibitor", "clock"],
     "hyprland/workspaces": {
         "format": "{name}",
         "disable-scroll": true
@@ -35,9 +35,9 @@
         "format-alt": "{ipaddr}/{cidr} {icon}",
         "format-alt-click": "click-right",
         "format-icons": {
-            "wifi": ["", "" ,""],
-            "ethernet": [""],
-            "disconnected": [""]
+            "wifi": ["󰤟", "󰤢" ,"󰤨"],
+            "ethernet": ["󰈁"],
+            "disconnected": ["󰈂"]
         },
         "on-click": "termite -e nmtui",
     "tooltip": false
@@ -46,7 +46,7 @@
         "format": "{icon}",
         "format-alt": "{volume} {icon}",
         "format-alt-click": "click-right",
-        "format-muted": "",
+        "format-muted": "󰝟",
         "format-icons": {
             "phone": [" ", " ", " ", " "],
             "default": ["", "", "", ""]
@@ -80,7 +80,7 @@
     },
     "custom/weather": {
         "format": "{}",
-        "format-alt": "{alt}: {}",
+        "format-alt": "{alt}: {text}",
         "format-alt-click": "click-right",
         "interval": 1800,
         "return-type": "json",
@@ -90,7 +90,7 @@
     "idle_inhibitor": {
         "format": "{icon}",
         "format-icons": {
-            "activated": "",
+            "activated": "󱙱",
             "deactivated": ""
         },
         "tooltip": false

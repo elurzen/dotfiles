@@ -504,7 +504,12 @@
             "enabled": false
         },
         "VcNarrator": {
-            "enabled": true
+            "enabled": false,
+            "joinMessage": "{{USER}} joined",
+            "sayOwnName": false,
+            "latinOnly": false,
+            "volume": 1,
+            "rate": 1
         },
         "VencordToolbox": {
             "enabled": false
@@ -570,6 +575,6 @@
         "authenticated": false,
         "url": "https://api.vencord.dev/",
         "settingsSync": false,
-        "settingsSyncVersion": 1751849944857
+        "settingsSyncVersion": 1752167765894
     }
 }

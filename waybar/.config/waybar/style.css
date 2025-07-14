@@ -19,6 +19,11 @@ window#waybar.solo {
 	background: rgba(35, 31, 32, 0.85);
 }
 
+window#waybar {
+	color: rgba(217, 216, 216, 1);
+	background: rgba(35, 31, 32, 0.85);
+}
+
 #workspaces {
 	margin: 0 5px;
 }
@@ -53,7 +58,7 @@ window#waybar.solo {
 #custom-spotify,
 #custom-weather,
 #custom-mail {
-	margin: 0px 6px 0px 10px;
+	margin: 0px 6px -5px 10px;
 	min-width: 25px;
 }
 
@@ -81,3 +86,15 @@ window#waybar.solo {
 #custom-storage.critical {
 	color: rgba(238, 46, 36, 1);
 }
+
+#tray {
+	margin-right: 40px;
+}
+
+#custom-weather {
+	margin-right: 15px;
+}
+
+/* #custom-weather .weather-icon { */
+/* 	font-size: 20px; */
+/* } */
