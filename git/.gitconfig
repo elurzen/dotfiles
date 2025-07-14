@@ -8,3 +8,4 @@
 [core]
 	autocrlf = input
 	pager = less -R
+	editor = nvim
