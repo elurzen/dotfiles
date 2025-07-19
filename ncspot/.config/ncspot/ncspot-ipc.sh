@@ -12,7 +12,7 @@ fi
 echo $$ > "$LOCKFILE"
 trap 'rm -f "$LOCKFILE"' EXIT INT TERM
 
-Create command file
+#Create command file
 touch "$COMMAND_FILE"
 echo "" > "$COMMAND_FILE"
 
@@ -22,7 +22,7 @@ echo "" > "$COMMAND_FILE"
     # tail -f "$COMMAND_FILE" &
     tail -f "$COMMAND_FILE" | while read -r cmd; do
 	    [[ -n "$cmd" ]] || continue
-	    echo "DEBUG: Sending command: '$cmd'" >&2  # This goes to stderr so you see it
+	    # echo "DEBUG: Sending command: '$cmd'" >&2  # This goes to stderr so you see it
 	    echo "$cmd"
 	    echo "" > "$COMMAND_FILE"
     done
@@ -32,4 +32,5 @@ echo "" > "$COMMAND_FILE"
 } | nc -U "$NCSPOT_SOCKET" | while read -r line; do
     # Parse incoming track info
     echo "$line" | jq -r '.playable.title + " - " + (.playable.album_artists | join(", "))' > "$CURRENT_TRACK"
+    pkill -RTMIN+8 waybar
 done

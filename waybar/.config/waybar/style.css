@@ -27,7 +27,7 @@ window#waybar {
 }
 
 #workspaces {
-	margin: 0 5px;
+	margin: 0px 50px 0px 5px;
 }
 
 #workspaces button {
@@ -57,7 +57,7 @@ window#waybar {
 #idle_inhibitor,
 #backlight,
 #custom-storage,
-#custom-spotify,
+#custom-ncspot,
 #custom-weather,
 #custom-mail {
 	margin: 0px 6px 0px 10px;

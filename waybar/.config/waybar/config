@@ -3,9 +3,11 @@
     "position": "top",
     "height": 30,
 
-    "modules-left": ["hyprland/workspaces"],
-    "modules-center": ["hyprland/window"],
-    "modules-right": ["tray", "custom/spotify", "custom/weather", "pulseaudio", "network", "idle_inhibitor", "clock"],
+    "modules-left": ["hyprland/workspaces", "custom/ncspot"],
+    //"modules-center": ["hyprland/window"],
+    //"modules-right": ["tray", "custom/ncspot", "custom/weather", "pulseaudio", "network", "idle_inhibitor", "clock"],
+    "modules-center": ["clock"],
+    "modules-right": ["tray", "custom/weather", "pulseaudio", "network", "idle_inhibitor"],
     "hyprland/workspaces": {
         "format": "{name}",
         "disable-scroll": true
@@ -51,16 +53,17 @@
             "phone": [" ", " ", " ", " "],
             "default": ["", "", "", ""]
         },
-        "scroll-step": 10,
+        "scroll-step": 1,
         "on-click": "pavucontrol",
         "tooltip": false
     },
-    "custom/spotify": {
-        "interval": 1,
+    "custom/ncspot": {
+	"signal": 8,
+        "exec": "~/.config/waybar/modules/ncspot.sh",
         "return-type": "json",
-        "exec": "~/.config/waybar/modules/spotify.sh",
-        "exec-if": "pgrep spotify",
-        "escape": true
+	"on-click": "~/.config/waybar/modules/ncspot.sh playpause",
+	"on-click-right": "~/.config/waybar/modules/ncspot.sh save",
+    	"format":"{}"
     },
     "custom/storage": {
         "format": "{} ",
