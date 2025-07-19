@@ -2,8 +2,17 @@
 NCSPOT_SOCKET="/run/user/1000/ncspot/ncspot.sock"
 COMMAND_FILE="/tmp/ncspot-commands"
 CURRENT_TRACK="/tmp/current-track"
+LOCKFILE="/tmp/ncspot-ipc.lock"
 
-# Create command file
+# Prevent multiple instances
+if [ -f "$LOCKFILE" ]; then
+    echo "ncspot-ipc already running (PID: $(cat "$LOCKFILE"))"
+    exit 0
+fi
+echo $$ > "$LOCKFILE"
+trap 'rm -f "$LOCKFILE"' EXIT INT TERM
+
+Create command file
 touch "$COMMAND_FILE"
 echo "" > "$COMMAND_FILE"
 
