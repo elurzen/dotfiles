@@ -46,6 +46,9 @@ st=38;2;120;120;120:\
 *.conf=38;2;140;140;140:\
 *.log=38;2;120;120;120"
 
+#Disable Telemetry for dotnet scaffolding
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+
 # Enable colors
 autoload -U colors && colors
 
