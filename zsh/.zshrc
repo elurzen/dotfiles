@@ -57,6 +57,9 @@ zstyle :compinstall filename '/home/vanzen/.zshrc'
 autoload -Uz compinit
 compinit
 
+# Tab autocomplete - lower case letters match both lower and uppercase
+zstyle ':completion:*' matcher-list 'm:{[:lower:]}={[:upper:]}'
+
 # Open files with default app
 alias o='xdg-open'
 alias open='xdg-open'
