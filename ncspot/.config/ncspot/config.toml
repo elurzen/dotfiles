@@ -1,3 +1,5 @@
+use_nerdfont = true
+
 [keybindings]
 "s" = "save current"
 
