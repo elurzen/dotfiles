@@ -1,14 +1,25 @@
 # History Settings
 HISTFILE=~/.histfile
-HISTSIZE=1000
-SAVEHIST=1000
+HISTSIZE=50000
+SAVEHIST=50000
+setopt EXTENDED_HISTORY        # record timestamp of each command
+setopt SHARE_HISTORY           # share history across sessions/panes live
+setopt INC_APPEND_HISTORY      # append as you go, not only on shell exit
+setopt HIST_IGNORE_ALL_DUPS    # drop older duplicates of a command
+setopt HIST_IGNORE_SPACE       # space-prefixed commands stay out of history
+setopt HIST_REDUCE_BLANKS      # trim superfluous blanks
+setopt HIST_VERIFY             # show !-expansions before running them
 
 # Shell Options
 setopt autocd extendedglob nomatch notify
+setopt AUTO_PUSHD PUSHD_IGNORE_DUPS PUSHD_SILENT  # cd builds a dir stack (dirs -v / cd -<n>)
+setopt INTERACTIVE_COMMENTS    # allow # comments on the interactive line
+setopt GLOB_DOTS               # globs match dotfiles too
 unsetopt beep
 
 export EDITOR=nvim
 export VISUAL=nvim
+export KEYTIMEOUT=1            # snappy ESC / vi-mode switching (10ms)
 export EZA_COLORS="\
 di=1;38;2;200;80;60:\
 ex=1;38;2;255;140;80:\
@@ -52,13 +63,11 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 # Enable colors
 autoload -U colors && colors
 
-# Tab autocomplete for zsh
-zstyle :compinstall filename '/home/vanzen/.zshrc'
-autoload -Uz compinit
-compinit
-
-# Tab autocomplete - lower case letters match both lower and uppercase
-zstyle ':completion:*' matcher-list 'm:{[:lower:]}={[:upper:]}'
+# Completion styling + caching (set before compinit runs below)
+[[ -d $HOME/.cache/zsh/zcompcache ]] || mkdir -p "$HOME/.cache/zsh/zcompcache"
+zstyle ':completion:*' matcher-list 'm:{[:lower:]}={[:upper:]}'   # case-insensitive match
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$HOME/.cache/zsh/zcompcache"
 
 # Open files with default app
 alias o='xdg-open'
@@ -92,37 +101,43 @@ zinit light-mode for \
 #
 # External Tools
 
-# z command - replaced cd, uses navigation history with fzf to jump intelligently
+# z command - replaced cd, uses navigation history to jump intelligently
 eval "$(zoxide init zsh)"
 
 # pretty shell prompt
 eval "$(starship init zsh)"
 
-# type "fuck" after an incorrect command to see potential corrected options
-eval "$(thefuck --alias)"
+# Smart command correction: type "fuck" after a bad command (Rust thefuck replacement).
+# Installed as a standalone binary in ~/.local/bin (see dotfiles/bootstrap.sh); guard so a
+# fresh box that hasn't run bootstrap yet doesn't error on shell start.
+(( $+commands[pay-respects] )) && eval "$(pay-respects zsh --alias fuck)"
 
-# Better Vi Mode
-zinit load "jeffreytse/zsh-vi-mode"
+# fzf: register its widgets/completion here (zle -N must run at top level, not inside
+# the zvm hook). The keys themselves are (re)bound in zvm_after_init below, because
+# zsh-vi-mode resets bindings on init and would otherwise shadow fzf's Ctrl-R.
+(( $+commands[fzf] )) && [[ -t 1 ]] && source <(fzf --zsh)
 
-# Suggestions, Syntax highlihghting, and completions
-zinit load "zsh-users/zsh-autosuggestions"
-zinit load "zsh-users/zsh-syntax-highlighting"
-zinit load "zsh-users/zsh-completions"
+# Completions: load BEFORE compinit so they actually register, then compile (cached).
+zinit ice blockf atpull'zinit creinstall -q .'
+zinit light zsh-users/zsh-completions
+autoload -Uz compinit
+compinit -C -d "$HOME/.cache/zsh/zcompdump"
 
-# Better history search with arrow keys
-zinit load "zsh-users/zsh-history-substring-search"
+# Interactive widget stack - kept synchronous so zsh-vi-mode's ZLE rebinds stay
+# deterministic. Order matters: fast-syntax-highlighting must come after the other
+# widget-wrapping plugins, and history-substring-search must come after highlighting.
+zinit light jeffreytse/zsh-vi-mode
+zinit light zsh-users/zsh-autosuggestions
+zinit light zdharma-continuum/fast-syntax-highlighting
+zinit light zsh-users/zsh-history-substring-search
 
-# Git aliases without full OMZ
-zinit snippet "OMZP::git"
+# Deferred extras (turbo: load just after the first prompt).
+# NOTE: OMZ snippets stay synchronous on purpose - common-aliases would otherwise load
+# after, and clobber the eza ll/la aliases defined below.
+zinit snippet "OMZP::git"            # git aliases without full OMZ
+zinit snippet "OMZP::common-aliases" # ll, la, grep colors, etc.
+zinit wait lucid from"gh-r" as"program" mv"eza* -> eza" for @eza-community/eza  # modern ls
 
-# Common aliases (ll, la, grep colors, etc)
-zinit snippet "OMZP::common-aliases"
-
-# EZA - modern ls replacement
-zinit from"gh-r" as"program" mv"eza* -> eza" for @eza-community/eza
-
-# # Directory jumping
-# zinit load "agkozak/zsh-z"
 ############################################ Aliases ############################################
 
 # EZA rebinds
@@ -140,8 +155,21 @@ alias egrep='egrep --color=auto'
 
  ############################################ Keybinds ############################################
 
-# Fix autosuggestions integration
+# zsh-vi-mode resets keybindings on init, so anything custom (and fzf's Ctrl-R) must be
+# (re)bound from inside this hook, otherwise vi-mode clobbers it.
 function zvm_after_init() {
   zvm_bindkey viins '^k' history-substring-search-up
   zvm_bindkey viins '^j' history-substring-search-down
+  # fzf: Ctrl-R history, Ctrl-T file picker, Alt-C cd-into-subdir. Widgets are
+  # defined at top level above; bind through zvm_bindkey so vi-mode's own ^R/^T
+  # binds (applied after this hook) don't shadow them.
+  if (( $+functions[fzf-history-widget] )); then
+    zvm_bindkey viins '^R' fzf-history-widget
+    zvm_bindkey viins '^T' fzf-file-widget
+    zvm_bindkey viins '^[c' fzf-cd-widget
+  fi
+  # pay-respects inline fix on Ctrl-X Ctrl-X (the eval above defines the widget)
+  (( $+functions[__pr_inline] )) && bindkey '^X^X' __pr_inline
 }
+
+export PATH="$HOME/.local/bin:$PATH"
