@@ -22,7 +22,9 @@ $rust\
 $scala\
 [](fg:#1a1a1a bg:#404040)\
 $docker_context\
-[](fg:#404040 bg:#550F00)\
+[](fg:#404040 bg:#772200)\
+$kubernetes\
+[](fg:#772200 bg:#550F00)\
 $time\
 [ ](fg:#550F00)\
 """
@@ -147,3 +149,19 @@ disabled = false
 time_format = "%R" # Hour:Minute Format
 style = "bg:#550F00"
 format = '[  $time ]($style)'
+
+[kubernetes]
+disabled = false
+symbol = "⎈ "
+style = "bg:#772200"
+format = '[ $symbol$context ]($style)'
+
+# gov cluster: just the short name
+[[kubernetes.contexts]]
+context_pattern = 'gov-devops'
+context_alias = 'gov'
+
+# Shorten the rest: k8s-internal -> internal, k8s-live -> live, k8s-devops -> devops
+[[kubernetes.contexts]]
+context_pattern = 'k8s-(?P<c>[\w-]+)'
+context_alias = '$c'
