@@ -107,10 +107,10 @@ eval "$(zoxide init zsh)"
 # pretty shell prompt
 eval "$(starship init zsh)"
 
-# Smart command correction: type "fuck" after a bad command (Rust thefuck replacement).
+# Smart command correction: type "f" after a bad command (Rust thefuck replacement).
 # Installed as a standalone binary in ~/.local/bin (see dotfiles/bootstrap.sh); guard so a
 # fresh box that hasn't run bootstrap yet doesn't error on shell start.
-(( $+commands[pay-respects] )) && eval "$(pay-respects zsh --alias fuck)"
+(( $+commands[pay-respects] )) && eval "$(pay-respects zsh)"
 
 # fzf: register its widgets/completion here (zle -N must run at top level, not inside
 # the zvm hook). The keys themselves are (re)bound in zvm_after_init below, because
@@ -153,6 +153,12 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
+# Claude Code: launch with permission prompts bypassed (matches Windows .zshrc)
+alias claude='claude --dangerously-skip-permissions'
+
+# tome - personal todo/notes vault (read-only viewer in ~/tome/bin/tome; structured writes via the /tome skill)
+tome() { bash "$HOME/tome/bin/tome" "$@"; }
+
  ############################################ Keybinds ############################################
 
 # zsh-vi-mode resets keybindings on init, so anything custom (and fzf's Ctrl-R) must be
@@ -173,3 +179,6 @@ function zvm_after_init() {
 }
 
 export PATH="$HOME/.local/bin:$PATH"
+
+# Machine-local overrides (e.g. VS Code path on the work box) - not stowed/committed.
+[[ -f $HOME/.zshrc.local ]] && source "$HOME/.zshrc.local"
