@@ -153,6 +153,21 @@ alias egrep='egrep --color=auto'
 alias o='xdg-open'
 alias open='xdg-open'
 
+# clip: pipe stdin to the system clipboard, e.g. `echo poop | clip`.
+# Portable: clip.exe on WSL (Windows clipboard via interop; System32 isn't on PATH),
+# else wl-copy (Wayland) or xclip (X11) on a Linux desktop.
+clip() {
+  if [[ -e /mnt/c/Windows/System32/clip.exe ]]; then
+    /mnt/c/Windows/System32/clip.exe
+  elif (( $+commands[wl-copy] )); then
+    wl-copy
+  elif (( $+commands[xclip] )); then
+    xclip -selection clipboard
+  else
+    print -u2 "clip: no clipboard backend (clip.exe/wl-copy/xclip)"; return 1
+  fi
+}
+
 # Pacman (Arch): install a package, e.g. `pi neovim`. --needed skips already-current pkgs.
 alias pi='sudo pacman -S --needed '
 
