@@ -69,10 +69,6 @@ zstyle ':completion:*' matcher-list 'm:{[:lower:]}={[:upper:]}'   # case-insensi
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$HOME/.cache/zsh/zcompcache"
 
-# Open files with default app
-alias o='xdg-open'
-alias open='xdg-open'
-
 ### Added by Zinit's installer
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
@@ -153,7 +149,14 @@ alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
-# Claude Code: launch with permission prompts bypassed (matches Windows .zshrc)
+# Open files with default app
+alias o='xdg-open'
+alias open='xdg-open'
+
+# Pacman (Arch): install a package, e.g. `pi neovim`. --needed skips already-current pkgs.
+alias pi='sudo pacman -S --needed '
+
+# Claude Code: launch with permission prompts bypassed
 alias claude='claude --dangerously-skip-permissions'
 
 # tome - personal todo/notes vault (read-only viewer in ~/tome/bin/tome; structured writes via the /tome skill)
