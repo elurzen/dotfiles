@@ -90,6 +90,38 @@ fi
 # Claude Code OAuth MCP servers (slack, figma) — NOT scriptable (interactive login):
 #   In Claude Code run:  /mcp   then authenticate each.
 
+# tmux autostart on interactive WSL login (optional, prompted).
+# WSL-only ergonomic. Appended to ~/.zshrc.local (machine-local, not stowed) so it
+# loads LAST, after the aliases there. Idempotent via the marker it writes.
+if grep -qi microsoft /proc/version 2>/dev/null; then
+  zlocal="$HOME/.zshrc.local"
+  if [[ -f "$zlocal" ]] && grep -q '>>> tmux-autostart (bootstrap)' "$zlocal"; then
+    echo "==> tmux autostart already in ~/.zshrc.local, skipping"
+  else
+    _ans=""
+    [[ -t 0 ]] && { read -r -p "Enable tmux autostart on interactive WSL login? [Y/n] " _ans || true; }
+    case "${_ans:-Y}" in
+      [Nn]*) echo "==> Skipping tmux autostart (re-run bootstrap to add it later)" ;;
+      *)
+        echo "==> Adding tmux autostart to ~/.zshrc.local"
+        cat >> "$zlocal" <<'EOF'
+
+# >>> tmux-autostart (bootstrap) >>>
+# Auto-start tmux on interactive WSL login. Attach to the 'main' session or create it.
+# Guards: interactive + real TTY, not already in tmux, tmux installed, not the VS Code
+# terminal - so non-TTY shells (Claude Code, scripts) and the VS Code integrated
+# terminal are never grabbed. Keep this LAST: `exec` replaces the shell.
+if [[ $- == *i* ]] && [[ -t 1 ]] && [[ -z $TMUX ]] && command -v tmux >/dev/null 2>&1 \
+     && [[ $TERM_PROGRAM != vscode ]] && [[ -z $VSCODE_INJECTION ]]; then
+  exec tmux new-session -A -s main
+fi
+# <<< tmux-autostart (bootstrap) <<<
+EOF
+        ;;
+    esac
+  fi
+fi
+
 # --- non-pacman layer: work (htxlabs) -------------------------------------
 if has_profile work; then
   # kubelogin — AKS AAD exec-credential plugin for kubectl/k9s. AUR-only, so
@@ -114,6 +146,62 @@ if has_profile work; then
   # The kubeconfig itself is a per-machine secret and lives in its own git repo,
   # NOT here. Seed it once:  cp /mnt/c/Users/<you>/.kube/config ~/.kube/config
   # (commercial AKS clusters need the corp VPN; gov uses its own.)
+
+  # git: work identity + ADO credentials (machine-local, NOT stowed).
+  # The personal identity is the stowed default (~/.gitconfig -> dotfiles/git).
+  # These two files layer the work identity onto repos under ~/htx/repos and supply
+  # ADO credentials. Generated here (not committed) so work config stays out of the
+  # personal dotfiles and the helper path uses $HOME instead of being hardcoded.
+  #   Routing lives in the stowed personal ~/.gitconfig:
+  #     [includeIf "gitdir:~/htx/repos/"] path = ~/.config/git/work.gitconfig
+  #   PREREQ (manual, like the kubeconfig): the gpg credential store needs a gpg key
+  #   + `pass` initialised, and the ADO PAT stored at pass:git/https/dev.azure.com/<org>
+  #   (see the arch-wsl-bootstrap note). Written generate-if-absent so local edits win.
+  mkdir -p "$HOME/.config/git"
+  if [[ ! -f "$HOME/.config/git/work.gitconfig" ]]; then
+    echo "==> Writing ~/.config/git/work.gitconfig (work identity + diff/merge tools)"
+    cat > "$HOME/.config/git/work.gitconfig" <<'EOF'
+# Work identity + diff/merge tools for this WSL box.
+# Applied ONLY inside ~/htx/repos, via the includeIf at the end of ~/.gitconfig
+# (the stowed personal config). Machine-local: intentionally NOT in the dotfiles repo.
+[user]
+	name = Evan Urzen
+	email = evan@htxlabs.com
+[diff]
+	tool = vscode
+[merge]
+	tool = vscode
+[difftool "vscode"]
+	cmd = code --wait --diff \"$LOCAL\" \"$REMOTE\"
+[mergetool "vscode"]
+	cmd = code --wait \"$MERGED\"
+[difftool]
+	prompt = false
+[mergetool]
+	keepBackup = false
+EOF
+  else
+    echo "==> ~/.config/git/work.gitconfig exists, leaving it"
+  fi
+  if [[ ! -f "$HOME/.config/git/config" ]]; then
+    echo "==> Writing ~/.config/git/config (ADO credentials; \$HOME-based)"
+    cat > "$HOME/.config/git/config" <<EOF
+# Machine-local GLOBAL git config for this WSL work box. NOT in the dotfiles repo.
+# Holds ADO credential config only. Kept here (global + unconditional) rather than in
+# the work.gitconfig include because \`git clone\` of a new ADO repo must authenticate
+# BEFORE the repo - and thus the gitdir includeIf - exists. Read at XDG scope, before
+# ~/.gitconfig; harmless because these keys don't overlap with the personal identity.
+[credential]
+	helper =
+	helper = $HOME/.local/bin/git-credential-manager
+	credentialStore = gpg
+[credential "https://dev.azure.com"]
+	useHttpPath = false
+	provider = generic
+EOF
+  else
+    echo "==> ~/.config/git/config exists, leaving it"
+  fi
 fi
 
 echo
