@@ -2,6 +2,7 @@ base
 base-devel
 bat
 btop
+curl
 dotnet-sdk
 fzf
 git
@@ -19,9 +20,9 @@ ripgrep
 starship
 stow
 sudo
-thefuck
 tmux
 unzip
 wget
 zoxide
 zsh
+zstd
