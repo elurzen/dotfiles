@@ -174,6 +174,13 @@ alias pi='sudo pacman -S --needed '
 # Claude Code: launch with permission prompts bypassed
 alias claude='claude --dangerously-skip-permissions'
 
+# glow: fill the terminal width by default (it otherwise wraps at 80). TTY-only, so
+# piped/redirected output keeps glow's default (stays reproducible). `command` avoids
+# recursing into this function; an explicit -w/--width you pass still wins (last flag).
+glow() {
+  if [[ -t 1 ]]; then command glow --width "$COLUMNS" "$@"; else command glow "$@"; fi
+}
+
 # tome - personal todo/notes vault (read-only viewer in ~/tome/bin/tome; structured writes via the /tome skill)
 tome() { bash "$HOME/tome/bin/tome" "$@"; }
 
