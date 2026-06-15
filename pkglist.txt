@@ -1,4 +1,3 @@
-azure-cli
 base
 base-devel
 bat
@@ -8,8 +7,6 @@ fzf
 git
 glow
 jq
-k9s
-kubectl
 lazygit
 less
 ncspot
@@ -26,7 +23,5 @@ thefuck
 tmux
 unzip
 wget
-yay-bin
-yay-bin-debug
 zoxide
 zsh
