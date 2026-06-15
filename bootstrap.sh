@@ -83,6 +83,19 @@ else
   echo "==> pay-respects already installed, skipping"
 fi
 #
+# Neovim config (SLVim, htx-labs branch = the lightweight WSL/work editing setup).
+#   It lives in its own repo (github.com/elurzen/SLVim), so clone it into place
+#   rather than stow it. Idempotent: skip if ~/.config/nvim already exists.
+#   Depends on unzip (pkglist.txt) so mason can extract stylua/terraform-ls.
+NVIM_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+if [ ! -d "$NVIM_CONFIG" ]; then
+  echo "==> Cloning nvim config (SLVim htx-labs) -> $NVIM_CONFIG"
+  git clone --branch htx-labs --single-branch git@github.com:elurzen/SLVim.git "$NVIM_CONFIG"
+  echo "    First nvim launch installs plugins + LSP servers (lazy.nvim + mason)."
+else
+  echo "==> nvim config already present at $NVIM_CONFIG, skipping"
+fi
+#
 # Claude Code node-based MCP servers (context7, playwright):
 #   No extra step — they launch via `npx`, which nodejs+npm (above) provide.
 #   npx fetches the server packages on demand; no global npm install needed.
