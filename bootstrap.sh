@@ -23,9 +23,13 @@
 #   DOTFILES_PROFILE=work ./bootstrap.sh
 #   echo work > ~/.config/dotfiles/profile      # persist the choice on this box
 #
-# Refresh the base list after any pacman install — subtract the profile lists so
-# work/personal packages never leak into base:
-#   comm -23 <(pacman -Qqe | sort) <(sort pkglist-work.txt pkglist-personal.txt 2>/dev/null) > pkglist.txt
+# Refresh the base list after any pacman install. Subtract the profile layers (so
+# work/personal packages never leak into base) AND foreign/AUR packages (pacman -S
+# can't install those from the official repos - they'd break a fresh base install).
+# Use cat, not sort, for the layer files: cat tolerates a missing personal list,
+# whereas `sort a b` fails on it and silently subtracts nothing (leaking everything):
+#   comm -23 <(pacman -Qqe | sort -u) \
+#     <({ cat pkglist-work.txt pkglist-personal.txt 2>/dev/null; pacman -Qqem; } | sort -u) > pkglist.txt
 #
 set -euo pipefail
 cd "$(dirname "$0")"
