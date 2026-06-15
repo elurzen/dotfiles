@@ -9,3 +9,9 @@
 	autocrlf = input
 	pager = less -R
 	editor = nvim
+
+# Work box only: layer the htxlabs identity + tools over personal inside ~/htx/repos.
+# The included file is machine-local (created per work box, not tracked here), so on any
+# machine without it - or without ~/htx/repos - this block is a harmless no-op.
+[includeIf "gitdir:~/htx/repos/"]
+	path = ~/.config/git/work.gitconfig
