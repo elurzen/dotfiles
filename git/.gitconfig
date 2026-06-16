@@ -10,8 +10,26 @@
 	pager = less -R
 	editor = nvim
 
-# Work box only: layer the htxlabs identity + tools over personal inside ~/htx/repos.
-# The included file is machine-local (created per work box, not tracked here), so on any
-# machine without it - or without ~/htx/repos - this block is a harmless no-op.
-[includeIf "gitdir:~/htx/repos/"]
+# Identity model. Both overlay files below live in ~/.config/git/ and are
+# machine-local (NOT tracked here), so this whole block is a harmless no-op on a
+# machine that lacks them.
+#
+#   - This tracked file defaults to PERSONAL (above) so it stays portable: on a
+#     personal-only box with no overlays, every repo commits as Vanzen.
+#   - On a WORK box, work.gitconfig is present and included UNCONDITIONALLY below,
+#     making WORK the effective default for any repo on this box.
+#   - Personal identity is then layered BACK on for repos hosted on the personal
+#     github org (elurzen/*), matched by remote URL - so personal projects stay
+#     personal wherever they live on disk (~/code, ~/.config/nvim, even a personal
+#     repo parked under ~/htx/repos). New personal clones pick this up once origin
+#     is set.
+
+# Work box: work identity + diff/merge tools become the effective default here.
+[include]
 	path = ~/.config/git/work.gitconfig
+
+# Personal github org -> override back to personal identity, anywhere on disk.
+[includeIf "hasconfig:remote.*.url:git@github.com:elurzen/**"]
+	path = ~/.config/git/personal.gitconfig
+[includeIf "hasconfig:remote.*.url:https://github.com/elurzen/**"]
+	path = ~/.config/git/personal.gitconfig
