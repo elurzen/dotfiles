@@ -168,8 +168,8 @@ clip() {
   fi
 }
 
-# Pacman (Arch): install a package, e.g. `pi neovim`. --needed skips already-current pkgs.
-alias pi='sudo pacman -S --needed '
+# `pi` (install a package, e.g. `pi neovim`, AND record it in a dotfiles pkglist) is now a
+# function defined via lib/pkg.sh sourced below - supersedes the old plain `pacman` alias.
 
 # Claude Code: launch with permission prompts bypassed
 alias claude='claude --dangerously-skip-permissions'
@@ -183,6 +183,9 @@ glow() {
 
 # tome - personal todo/notes vault (read-only viewer in ~/tome/bin/tome; structured writes via the /tome skill)
 tome() { bash "$HOME/tome/bin/tome" "$@"; }
+
+# pi - dotfiles package install + list recorder (see ~/dotfiles/lib/pkg.sh)
+[[ -f "$HOME/dotfiles/lib/pkg.sh" ]] && source "$HOME/dotfiles/lib/pkg.sh"
 
  ############################################ Keybinds ############################################
 
