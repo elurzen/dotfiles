@@ -34,6 +34,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+DRY_RUN=0
+[[ "${1:-}" == "--dry-run" ]] && { DRY_RUN=1; shift; echo "==> DRY RUN: showing the install plan; no changes will be made"; }
+# run: in dry-run, print the command instead of executing it.
+run() { if [[ $DRY_RUN -eq 1 ]]; then echo "  [dry-run] $*"; else "$@"; fi; }
+
 # --- profile resolution ---------------------------------------------------
 PROFILE="${DOTFILES_PROFILE:-$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile" 2>/dev/null || echo base)}"
 PROFILE="${PROFILE// /}"   # tolerate stray spaces in the marker/env value
@@ -51,7 +56,7 @@ echo "==> Machine: $MACHINE"
 ROLE=""
 has_profile work && ROLE=work
 has_profile personal && ROLE=personal
-if [[ -z "$ROLE" && -t 0 ]]; then
+if [[ -z "$ROLE" && -t 0 && $DRY_RUN -eq 0 ]]; then
   read -r -p "Role for this machine? [w]ork / [p]ersonal / [n]one: " _r
   case "$_r" in w*) ROLE=work ;; p*) ROLE=personal ;; *) ROLE="" ;; esac
 fi
@@ -61,7 +66,7 @@ echo "==> Installing pacman layers: ${_lists[*]}"
 
 # Optional one-off extras for THIS run (e.g. pick a couple from a list you're not installing).
 EXTRAS=()
-if [[ -t 0 ]]; then
+if [[ -t 0 && $DRY_RUN -eq 0 ]]; then
   read -r -p "Add any one-off extra packages this run? (space-separated, blank to skip): " _extra
   read -r -a EXTRAS <<< "$_extra"
 fi
@@ -69,14 +74,14 @@ fi
 first=1
 for _l in "${_lists[@]}"; do
   if [[ $first -eq 1 ]]; then
-    sudo pacman -Syu --needed - < "$_l"; first=0
+    run sudo pacman -Syu --needed - < "$_l"; first=0
   else
-    sudo pacman -S --needed - < "$_l"
+    run sudo pacman -S --needed - < "$_l"
   fi
 done
 if [[ ${#EXTRAS[@]} -gt 0 ]]; then
   echo "==> Installing one-off extras: ${EXTRAS[*]}"
-  sudo pacman -S --needed "${EXTRAS[@]}"
+  run sudo pacman -S --needed "${EXTRAS[@]}"
 fi
 
 # --- dotfiles (GNU stow) --------------------------------------------------
@@ -84,7 +89,17 @@ fi
 # (see lib/profile.sh): wsl gets the core set, desktop adds the Wayland configs.
 read -r -a STOW_PKGS <<< "$(stow_set "$MACHINE")"
 echo "==> Stowing ($MACHINE): ${STOW_PKGS[*]}"
-stow -v "${STOW_PKGS[@]}"
+run stow -v "${STOW_PKGS[@]}"
+
+# In dry-run, the install plan (pacman layers + stow) is the useful preview; the
+# remaining steps are idempotent setup. Summarize what's left and stop here.
+if [[ $DRY_RUN -eq 1 ]]; then
+  _rest="ssh key, pay-respects, nvim clone, tmux autostart"
+  has_profile work && _rest="$_rest, kubelogin, work git creds, pass/PAT + kubeconfig guidance"
+  echo "==> [dry-run] remaining steps (not shown): $_rest"
+  echo "==> [dry-run] done."
+  exit 0
+fi
 
 # --- guided: SSH key (idempotent; must precede the SSH-based clones below) -
 # Generating it here also fixes the chicken-and-egg: the nvim clone (and future
