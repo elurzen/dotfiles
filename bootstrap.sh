@@ -40,27 +40,33 @@ PROFILE="${PROFILE// /}"   # tolerate stray spaces in the marker/env value
 echo "==> Profile: $PROFILE"
 has_profile() { [[ ",$PROFILE," == *",$1,"* ]]; }
 
-# --- pacman layer ---------------------------------------------------------
-# Full sync + upgrade alongside the install to avoid Arch partial-upgrade breakage.
-echo "==> Installing base pacman packages from pkglist.txt"
-sudo pacman -Syu --needed - < pkglist.txt
+# --- shared helpers + machine detection -----------------------------------
+source "$(dirname "$0")/lib/profile.sh"
+MACHINE="$(detect_machine)"
+echo "==> Machine: $MACHINE"
 
-if has_profile work && [[ -s pkglist-work.txt ]]; then
-  echo "==> Installing work pacman packages from pkglist-work.txt"
-  sudo pacman -S --needed - < pkglist-work.txt
-fi
-if has_profile personal && [[ -s pkglist-personal.txt ]]; then
-  echo "==> Installing personal pacman packages from pkglist-personal.txt"
-  sudo pacman -S --needed - < pkglist-personal.txt
-fi
+# --- pacman layer ---------------------------------------------------------
+# Compose base + machine + role lists; full -Syu on the first (base) install to
+# avoid Arch partial-upgrade breakage, --needed installs for the rest.
+ROLE=""
+has_profile work && ROLE=work
+has_profile personal && ROLE=personal
+read -r -a _lists <<< "$(pkglist_files "$MACHINE" "$ROLE")"
+echo "==> Installing pacman layers: ${_lists[*]}"
+first=1
+for _l in "${_lists[@]}"; do
+  if [[ $first -eq 1 ]]; then
+    sudo pacman -Syu --needed - < "$_l"; first=0
+  else
+    sudo pacman -S --needed - < "$_l"
+  fi
+done
 
 # --- dotfiles (GNU stow) --------------------------------------------------
-# Each top-level dir is a stow package mirroring $HOME.
-# TODO(evan): confirm the WSL stow set. Desktop/Wayland configs
-# (hypr mako waybar vesktop ncspot alacritty) are skipped here — add them on a
-# desktop machine.
-STOW_PKGS=(btop git starship tmux zsh)
-echo "==> Stowing: ${STOW_PKGS[*]}"
+# Each top-level dir is a stow package mirroring $HOME. The set is machine-aware
+# (see lib/profile.sh): wsl gets the core set, desktop adds the Wayland configs.
+read -r -a STOW_PKGS <<< "$(stow_set "$MACHINE")"
+echo "==> Stowing ($MACHINE): ${STOW_PKGS[*]}"
 stow -v "${STOW_PKGS[@]}"
 
 # --- non-pacman layer: base (append as you go) ----------------------------
