@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Throwaway Arch WSL instance to test-drive bootstrap.sh end to end, then discard.
 #
-# Creates an ISOLATED distro named 'arch-testdrive' from the official Arch rootfs.
-# It NEVER touches your real distro: separate name, separate filesystem/vhdx. The
-# rootfs tarball + the instance's disk image live on the Windows filesystem (disk
-# space only); the disk image is freed when you --unregister.
+# Installs the OFFICIAL Arch WSL image under an ISOLATED name 'arch-testdrive' via
+# `wsl --install` (complete, WSL-ready image - no rootfs download or repack). It
+# NEVER touches your real distro: separate name, separate filesystem/vhdx in its
+# own --location dir. The disk image is freed when you --unregister.
 #
 # Usage (run from inside WSL):
 #   test/wsl-test-drive.sh                 # dry-run in the sandbox, work profile (default)
@@ -24,46 +24,37 @@ for a in "$@"; do
   esac
 done
 
-command -v wsl.exe >/dev/null || { echo "wsl.exe not found - run this from inside WSL."; exit 1; }
+# Windows binaries aren't on PATH here (appendWindowsPath=false), so resolve them.
+WSL="$(command -v wsl.exe || echo /mnt/c/Windows/System32/wsl.exe)"
+CMD="$(command -v cmd.exe || echo /mnt/c/Windows/System32/cmd.exe)"
+[[ -x "$WSL" ]] || { echo "wsl.exe not found at $WSL"; exit 1; }
 
-# Windows-side scratch dir (rootfs + the instance vhdx live here, NOT in any distro).
-win_tmp="$(wslpath "$(cmd.exe /c 'echo %TEMP%' 2>/dev/null | tr -d '\r')")"
-scratch="$win_tmp/arch-testdrive"
-rootfs="$win_tmp/arch-rootfs.tar"
-mkdir -p "$scratch"
+win_tmp="$(wslpath "$("$CMD" /c 'echo %TEMP%' 2>/dev/null | tr -d '\r')")"
+location="$win_tmp/$INSTANCE"
 
 # Safety: only ever act on the throwaway name. If a stale one exists, replace it.
-if wsl.exe -l -q 2>/dev/null | tr -d '\r' | grep -qx "$INSTANCE"; then
+if "$WSL" -l -q 2>/dev/null | tr -d '\0\r' | grep -qx "$INSTANCE"; then
   echo "==> '$INSTANCE' exists from a prior run; unregistering the old throwaway."
-  wsl.exe --unregister "$INSTANCE"
+  "$WSL" --unregister "$INSTANCE"
 fi
 
-# 1. Official Arch rootfs via the bootstrap tarball (cached; no docker needed).
-if [[ ! -f "$rootfs" ]]; then
-  echo "==> Fetching official Arch bootstrap rootfs (one-time, cached at $rootfs)"
-  bs="$win_tmp/archlinux-bootstrap.tar.zst"
-  curl -fSL -o "$bs" "https://geo.mirror.pkgbuild.com/iso/latest/archlinux-bootstrap-x86_64.tar.zst"
-  ex="$(mktemp -d)"
-  bsdtar -xpf "$bs" -C "$ex"                    # extracts to $ex/root.x86_64/
-  bsdtar -cpf "$rootfs" -C "$ex/root.x86_64" .  # repack so files sit at tar root (wsl --import wants that)
-  rm -rf "$ex"
-fi
+# 1. Install the official Arch image under the throwaway name (no OOBE; isolated dir).
+echo "==> Installing the official Arch image as '$INSTANCE' (no launch)"
+"$WSL" --install archlinux --name "$INSTANCE" --location "$(wslpath -w "$location")" --no-launch
 
-# 2. Import the isolated throwaway instance.
-echo "==> Importing throwaway '$INSTANCE'"
-wsl.exe --import "$INSTANCE" "$(wslpath -w "$scratch")" "$(wslpath -w "$rootfs")"
-
-# 3. Inside the sandbox (runs as root): mirror + keyring, prereqs (incl. sudo, which
-#    bootstrap.sh calls), clone the BRANCH over HTTPS, then run bootstrap.
+# 2. Inside the sandbox (as root): ensure prereqs (incl. sudo, which bootstrap calls),
+#    rewrite git SSH->HTTPS so bootstrap's public nvim clone needs no key, clone the
+#    BRANCH, then run bootstrap.
 echo "==> Bootstrapping inside '$INSTANCE' (profile=$PROFILE, mode=${MODE:-WET})"
-wsl.exe -d "$INSTANCE" -- bash -euc "
-  echo 'Server = https://geo.mirror.pkgbuild.com/\$repo/os/\$arch' > /etc/pacman.d/mirrorlist
-  pacman-key --init && pacman-key --populate archlinux
-  pacman -Sy --noconfirm --needed git openssh sudo
+"$WSL" -d "$INSTANCE" -u root -- bash -euc "
+  pacman-key --init >/dev/null 2>&1 || true
+  pacman-key --populate archlinux >/dev/null 2>&1 || true
+  pacman -Sy --noconfirm --needed git openssh sudo ca-certificates
+  git config --global url.'https://github.com/'.insteadOf 'git@github.com:'
   git clone --branch '$BRANCH' --single-branch https://github.com/elurzen/dotfiles.git /root/dotfiles
   cd /root/dotfiles && DOTFILES_PROFILE='$PROFILE' ./bootstrap.sh $MODE
 "
 
 echo
-echo "==> Explore it:   wsl.exe -d $INSTANCE"
-echo "==> Destroy it:   wsl.exe --unregister $INSTANCE   (frees the disk image)"
+echo "==> Explore it:   wsl -d $INSTANCE       (from a Windows terminal / PowerShell)"
+echo "==> Destroy it:   wsl --unregister $INSTANCE   (frees the disk image)"
