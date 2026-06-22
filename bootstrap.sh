@@ -51,8 +51,21 @@ echo "==> Machine: $MACHINE"
 ROLE=""
 has_profile work && ROLE=work
 has_profile personal && ROLE=personal
+if [[ -z "$ROLE" && -t 0 ]]; then
+  read -r -p "Role for this machine? [w]ork / [p]ersonal / [n]one: " _r
+  case "$_r" in w*) ROLE=work ;; p*) ROLE=personal ;; *) ROLE="" ;; esac
+fi
+echo "==> Role: ${ROLE:-none}"
 read -r -a _lists <<< "$(pkglist_files "$MACHINE" "$ROLE")"
 echo "==> Installing pacman layers: ${_lists[*]}"
+
+# Optional one-off extras for THIS run (e.g. pick a couple from a list you're not installing).
+EXTRAS=()
+if [[ -t 0 ]]; then
+  read -r -p "Add any one-off extra packages this run? (space-separated, blank to skip): " _extra
+  read -r -a EXTRAS <<< "$_extra"
+fi
+
 first=1
 for _l in "${_lists[@]}"; do
   if [[ $first -eq 1 ]]; then
@@ -61,6 +74,10 @@ for _l in "${_lists[@]}"; do
     sudo pacman -S --needed - < "$_l"
   fi
 done
+if [[ ${#EXTRAS[@]} -gt 0 ]]; then
+  echo "==> Installing one-off extras: ${EXTRAS[*]}"
+  sudo pacman -S --needed "${EXTRAS[@]}"
+fi
 
 # --- dotfiles (GNU stow) --------------------------------------------------
 # Each top-level dir is a stow package mirroring $HOME. The set is machine-aware
