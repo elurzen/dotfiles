@@ -86,6 +86,20 @@ read -r -a STOW_PKGS <<< "$(stow_set "$MACHINE")"
 echo "==> Stowing ($MACHINE): ${STOW_PKGS[*]}"
 stow -v "${STOW_PKGS[@]}"
 
+# --- guided: SSH key (idempotent; must precede the SSH-based clones below) -
+# Generating it here also fixes the chicken-and-egg: the nvim clone (and future
+# repo work) authenticate to GitHub over SSH.
+pause() { [[ -t 0 ]] && read -r -p "$1 [enter to continue] " _ || true; }
+if [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+  echo "==> No SSH key found. Generating an ed25519 key."
+  ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$HOME/.ssh/id_ed25519" -N ""
+  echo "    Add this public key to GitHub (https://github.com/settings/keys):"
+  cat "$HOME/.ssh/id_ed25519.pub"
+  pause "    Paste it into GitHub, then"
+else
+  echo "==> SSH key present, skipping."
+fi
+
 # --- non-pacman layer: base (append as you go) ----------------------------
 #
 # pay-respects — Rust "thefuck" replacement (type `f` to correct the last command).
@@ -242,7 +256,24 @@ EOF
   else
     echo "==> ~/.config/git/config exists, leaving it"
   fi
+
+  # guided: gpg + pass + ADO PAT — gates the work git credential store above.
+  if ! pass ls >/dev/null 2>&1; then
+    echo "==> 'pass' store not initialized. The work git creds above use the gpg-backed"
+    echo "    'pass' store. Set it up: create a gpg key -> 'pass init <gpg-id>' -> store the PAT:"
+    echo "    pass insert git/https/dev.azure.com/<org>   (see the arch-wsl-bootstrap note)"
+    pause "    Set up pass + PAT in another shell, then"
+  else
+    echo "==> 'pass' store present, skipping."
+  fi
+
+  # guided: kubeconfig — per-machine secret, copied from the Windows side.
+  if [[ ! -f "$HOME/.kube/config" ]]; then
+    echo "==> No kubeconfig. Seed it once (commercial AKS needs the corp VPN):"
+    echo "    mkdir -p ~/.kube && cp /mnt/c/Users/<you>/.kube/config ~/.kube/config"
+    pause "    Copy it, then"
+  fi
 fi
 
 echo
-echo "==> Done. Manual step left: in Claude Code run '/mcp' to auth slack + figma."
+echo "==> Done. Last manual step: in Claude Code run '/mcp' to auth slack + figma (not scriptable)."
