@@ -1,3 +1,4 @@
 azure-cli
 k9s
 kubectl
+opentofu
