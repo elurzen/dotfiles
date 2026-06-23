@@ -45,28 +45,18 @@ echo "==> Installing the official Arch image as '$INSTANCE' (no launch)"
 # 2. Inside the sandbox (as root): ensure prereqs (incl. sudo, which bootstrap calls),
 #    rewrite git SSH->HTTPS so bootstrap's public nvim clone needs no key, clone the
 #    BRANCH, then run bootstrap.
-echo "==> Provisioning user 'vanzen' + bootstrapping inside '$INSTANCE' (profile=$PROFILE, mode=${MODE:-WET})"
+echo "==> Provisioning via provision.sh inside '$INSTANCE' (profile=$PROFILE, mode=${MODE:-WET})"
+# Clone as root, then hand off to the REAL provision.sh (creates vanzen, sets default user
+# via wsl --manage interop, runs bootstrap as vanzen). PROVISION_PASSWORD => unattended.
 "$WSL" -d "$INSTANCE" -u root -- bash -euc "
   pacman-key --init >/dev/null 2>&1 || true
   pacman-key --populate archlinux >/dev/null 2>&1 || true
-  pacman -Sy --noconfirm --needed git openssh sudo ca-certificates
-  # Create user 'vanzen' (wheel = sudo). Test passwords (root:root, vanzen:vanzen) and
-  # passwordless sudo so the unattended bootstrap doesn't block on a sudo prompt. Make
-  # vanzen the default WSL user. Mirrors a real box where vanzen exists and runs bootstrap.
-  id -u vanzen >/dev/null 2>&1 || useradd -m -G wheel vanzen
-  echo 'root:root'     | chpasswd
-  echo 'vanzen:vanzen' | chpasswd
-  echo 'vanzen ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/00-vanzen-test
-  git config --system url.'https://github.com/'.insteadOf 'git@github.com:'
-  # Run the whole dotfiles setup AS vanzen so everything lands in /home/vanzen.
-  runuser -l vanzen -c \"git clone --branch $BRANCH --single-branch https://github.com/elurzen/dotfiles.git ~/dotfiles && cd ~/dotfiles && DOTFILES_PROFILE=$PROFILE ./bootstrap.sh $MODE\"
-  # Match the real box: if bootstrap installed zsh, make it vanzen's login shell.
-  if command -v zsh >/dev/null; then grep -qx /usr/bin/zsh /etc/shells || echo /usr/bin/zsh >> /etc/shells; chsh -s /usr/bin/zsh vanzen; fi
+  pacman -Sy --noconfirm --needed git
+  git clone --branch $BRANCH --single-branch https://github.com/elurzen/dotfiles.git /root/dotfiles
+  cd /root/dotfiles && PROVISION_PASSWORD=test DOTFILES_PROFILE=$PROFILE ./provision.sh $MODE
 "
 
-# Make vanzen the default user (wsl.conf [user] is unreliable post-install; --manage is
-# authoritative), then terminate so the next launch logs in fresh as vanzen.
-"$WSL" --manage "$INSTANCE" --set-default-user vanzen >/dev/null 2>&1 || true
+# provision.sh set the default user (wsl --manage via interop); terminate so it applies.
 "$WSL" --terminate "$INSTANCE" >/dev/null 2>&1 || true
 
 echo
