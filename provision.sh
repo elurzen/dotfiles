@@ -19,7 +19,10 @@ PROFILE="${DOTFILES_PROFILE:-work}"
 [[ $EUID -eq 0 ]] || { echo "provision.sh must be run as root on a bare box."; exit 1; }
 UNATTENDED=0; [[ -n "${PROVISION_PASSWORD:-}" ]] && UNATTENDED=1
 
-command -v git >/dev/null || { echo "==> Installing git"; pacman -Sy --noconfirm --needed git; }
+# A bare official Arch image has neither git nor sudo; provision needs both (sudo also
+# creates /etc/sudoers.d, and vanzen's bootstrap run uses sudo).
+echo "==> Ensuring prereqs (git, sudo)"
+pacman -Sy --noconfirm --needed git sudo
 
 echo "==> Creating user '$USERNAME' (wheel)"
 id -u "$USERNAME" >/dev/null 2>&1 || useradd -m -G wheel "$USERNAME"
