@@ -74,14 +74,14 @@ fi
 first=1
 for _l in "${_lists[@]}"; do
   if [[ $first -eq 1 ]]; then
-    run sudo pacman -Syu --needed - < "$_l"; first=0
+    run sudo pacman -Syu --needed --noconfirm - < "$_l"; first=0
   else
-    run sudo pacman -S --needed - < "$_l"
+    run sudo pacman -S --needed --noconfirm - < "$_l"
   fi
 done
 if [[ ${#EXTRAS[@]} -gt 0 ]]; then
   echo "==> Installing one-off extras: ${EXTRAS[*]}"
-  run sudo pacman -S --needed "${EXTRAS[@]}"
+  run sudo pacman -S --needed --noconfirm "${EXTRAS[@]}"
 fi
 
 # --- dotfiles (GNU stow) --------------------------------------------------
