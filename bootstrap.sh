@@ -107,7 +107,7 @@ fi
 pause() { [[ -t 0 ]] && read -r -p "$1 [enter to continue] " _ || true; }
 if [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
   echo "==> No SSH key found. Generating an ed25519 key."
-  ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$HOME/.ssh/id_ed25519" -N ""
+  ssh-keygen -t ed25519 -C "$(whoami)@$(uname -n)" -f "$HOME/.ssh/id_ed25519" -N ""
   echo "    Add this public key to GitHub (https://github.com/settings/keys):"
   cat "$HOME/.ssh/id_ed25519.pub"
   pause "    Paste it into GitHub, then"
