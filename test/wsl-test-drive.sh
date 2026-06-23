@@ -56,7 +56,10 @@ echo "==> Provisioning via provision.sh inside '$INSTANCE' (profile=$PROFILE, mo
   cd /root/dotfiles && PROVISION_PASSWORD=test DOTFILES_PROFILE=$PROFILE ./provision.sh $MODE
 "
 
-# provision.sh set the default user (wsl --manage via interop); terminate so it applies.
+# provision.sh wrote wsl.conf; set the default user authoritatively from the host
+# (reliable, and avoids the self-restart that killed provision when done from inside),
+# then terminate so the next launch logs in fresh as vanzen.
+"$WSL" --manage "$INSTANCE" --set-default-user vanzen >/dev/null 2>&1 || true
 "$WSL" --terminate "$INSTANCE" >/dev/null 2>&1 || true
 
 echo

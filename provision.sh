@@ -44,11 +44,11 @@ else
 fi
 chmod 0440 /etc/sudoers.d/10-wheel
 
-echo "==> Making '$USERNAME' the default WSL user"
+echo "==> Setting '$USERNAME' as the default WSL user (applies on next distro start)"
+# Only write wsl.conf here. Do NOT call `wsl --manage` from inside - it restarts this
+# distro and would kill provision.sh mid-run. The host-side --manage (if needed) is the
+# printed follow-up below.
 printf '[user]\ndefault=%s\n' "$USERNAME" > /etc/wsl.conf
-wslexe="$(command -v wsl.exe || echo /mnt/c/Windows/System32/wsl.exe)"
-[[ -x "$wslexe" && -n "${WSL_DISTRO_NAME:-}" ]] && \
-  "$wslexe" --manage "$WSL_DISTRO_NAME" --set-default-user "$USERNAME" >/dev/null 2>&1 || true
 
 # Unattended (a throwaway has no GitHub key): clone nvim over public HTTPS. Real boxes
 # keep SSH - bootstrap's guided ssh-keygen step + the GitHub pause handle that.
@@ -68,3 +68,4 @@ fi
 
 echo
 echo "==> Provisioned. Restart the distro to log in as '$USERNAME' (wsl --terminate <distro>, or reopen)."
+echo "    If it still logs in as root, from Windows run: wsl --manage <distro> --set-default-user $USERNAME"
