@@ -34,34 +34,86 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+DRY_RUN=0
+[[ "${1:-}" == "--dry-run" ]] && { DRY_RUN=1; shift; echo "==> DRY RUN: showing the install plan; no changes will be made"; }
+# run: in dry-run, print the command instead of executing it.
+run() { if [[ $DRY_RUN -eq 1 ]]; then echo "  [dry-run] $*"; else "$@"; fi; }
+
 # --- profile resolution ---------------------------------------------------
 PROFILE="${DOTFILES_PROFILE:-$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/profile" 2>/dev/null || echo base)}"
 PROFILE="${PROFILE// /}"   # tolerate stray spaces in the marker/env value
 echo "==> Profile: $PROFILE"
 has_profile() { [[ ",$PROFILE," == *",$1,"* ]]; }
 
-# --- pacman layer ---------------------------------------------------------
-# Full sync + upgrade alongside the install to avoid Arch partial-upgrade breakage.
-echo "==> Installing base pacman packages from pkglist.txt"
-sudo pacman -Syu --needed - < pkglist.txt
+# --- shared helpers + machine detection -----------------------------------
+source "$(dirname "$0")/lib/profile.sh"
+MACHINE="$(detect_machine)"
+echo "==> Machine: $MACHINE"
 
-if has_profile work && [[ -s pkglist-work.txt ]]; then
-  echo "==> Installing work pacman packages from pkglist-work.txt"
-  sudo pacman -S --needed - < pkglist-work.txt
+# --- pacman layer ---------------------------------------------------------
+# Compose base + machine + role lists; full -Syu on the first (base) install to
+# avoid Arch partial-upgrade breakage, --needed installs for the rest.
+ROLE=""
+has_profile work && ROLE=work
+has_profile personal && ROLE=personal
+if [[ -z "$ROLE" && -t 0 && $DRY_RUN -eq 0 ]]; then
+  read -r -p "Role for this machine? [w]ork / [p]ersonal / [n]one: " _r
+  case "$_r" in w*) ROLE=work ;; p*) ROLE=personal ;; *) ROLE="" ;; esac
 fi
-if has_profile personal && [[ -s pkglist-personal.txt ]]; then
-  echo "==> Installing personal pacman packages from pkglist-personal.txt"
-  sudo pacman -S --needed - < pkglist-personal.txt
+echo "==> Role: ${ROLE:-none}"
+read -r -a _lists <<< "$(pkglist_files "$MACHINE" "$ROLE")"
+echo "==> Installing pacman layers: ${_lists[*]}"
+
+# Optional one-off extras for THIS run (e.g. pick a couple from a list you're not installing).
+EXTRAS=()
+if [[ -t 0 && $DRY_RUN -eq 0 ]]; then
+  read -r -p "Add any one-off extra packages this run? (space-separated, blank to skip): " _extra
+  read -r -a EXTRAS <<< "$_extra"
+fi
+
+first=1
+for _l in "${_lists[@]}"; do
+  if [[ $first -eq 1 ]]; then
+    run sudo pacman -Syu --needed --noconfirm - < "$_l"; first=0
+  else
+    run sudo pacman -S --needed --noconfirm - < "$_l"
+  fi
+done
+if [[ ${#EXTRAS[@]} -gt 0 ]]; then
+  echo "==> Installing one-off extras: ${EXTRAS[*]}"
+  run sudo pacman -S --needed --noconfirm "${EXTRAS[@]}"
 fi
 
 # --- dotfiles (GNU stow) --------------------------------------------------
-# Each top-level dir is a stow package mirroring $HOME.
-# TODO(evan): confirm the WSL stow set. Desktop/Wayland configs
-# (hypr mako waybar vesktop ncspot alacritty) are skipped here — add them on a
-# desktop machine.
-STOW_PKGS=(btop git starship tmux zsh)
-echo "==> Stowing: ${STOW_PKGS[*]}"
-stow -v "${STOW_PKGS[@]}"
+# Each top-level dir is a stow package mirroring $HOME. The set is machine-aware
+# (see lib/profile.sh): wsl gets the core set, desktop adds the Wayland configs.
+read -r -a STOW_PKGS <<< "$(stow_set "$MACHINE")"
+echo "==> Stowing ($MACHINE): ${STOW_PKGS[*]}"
+run stow -v "${STOW_PKGS[@]}"
+
+# In dry-run, the install plan (pacman layers + stow) is the useful preview; the
+# remaining steps are idempotent setup. Summarize what's left and stop here.
+if [[ $DRY_RUN -eq 1 ]]; then
+  _rest="ssh key, pay-respects, nvim clone, tmux autostart"
+  has_profile work && _rest="$_rest, kubelogin, work git creds, pass/PAT + kubeconfig guidance"
+  echo "==> [dry-run] remaining steps (not shown): $_rest"
+  echo "==> [dry-run] done."
+  exit 0
+fi
+
+# --- guided: SSH key (idempotent; must precede the SSH-based clones below) -
+# Generating it here also fixes the chicken-and-egg: the nvim clone (and future
+# repo work) authenticate to GitHub over SSH.
+pause() { [[ -t 0 ]] && read -r -p "$1 [enter to continue] " _ || true; }
+if [[ ! -f "$HOME/.ssh/id_ed25519.pub" ]]; then
+  echo "==> No SSH key found. Generating an ed25519 key."
+  ssh-keygen -t ed25519 -C "$(whoami)@$(uname -n)" -f "$HOME/.ssh/id_ed25519" -N ""
+  echo "    Add this public key to GitHub (https://github.com/settings/keys):"
+  cat "$HOME/.ssh/id_ed25519.pub"
+  pause "    Paste it into GitHub, then"
+else
+  echo "==> SSH key present, skipping."
+fi
 
 # --- non-pacman layer: base (append as you go) ----------------------------
 #
@@ -219,7 +271,24 @@ EOF
   else
     echo "==> ~/.config/git/config exists, leaving it"
   fi
+
+  # guided: gpg + pass + ADO PAT — gates the work git credential store above.
+  if ! pass ls >/dev/null 2>&1; then
+    echo "==> 'pass' store not initialized. The work git creds above use the gpg-backed"
+    echo "    'pass' store. Set it up: create a gpg key -> 'pass init <gpg-id>' -> store the PAT:"
+    echo "    pass insert git/https/dev.azure.com/<org>   (see the arch-wsl-bootstrap note)"
+    pause "    Set up pass + PAT in another shell, then"
+  else
+    echo "==> 'pass' store present, skipping."
+  fi
+
+  # guided: kubeconfig — per-machine secret, copied from the Windows side.
+  if [[ ! -f "$HOME/.kube/config" ]]; then
+    echo "==> No kubeconfig. Seed it once (commercial AKS needs the corp VPN):"
+    echo "    mkdir -p ~/.kube && cp /mnt/c/Users/<you>/.kube/config ~/.kube/config"
+    pause "    Copy it, then"
+  fi
 fi
 
 echo
-echo "==> Done. Manual step left: in Claude Code run '/mcp' to auth slack + figma."
+echo "==> Done. Last manual step: in Claude Code run '/mcp' to auth slack + figma (not scriptable)."
