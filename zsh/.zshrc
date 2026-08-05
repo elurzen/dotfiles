@@ -60,6 +60,9 @@ st=38;2;120;120;120:\
 #Disable Telemetry for dotnet scaffolding
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
+#Enable extensions for pass
+export PASSWORD_STORE_ENABLE_EXTENSIONS=true
+
 # Enable colors
 autoload -U colors && colors
 
@@ -99,6 +102,8 @@ zinit light-mode for \
 
 # z command - replaced cd, uses navigation history to jump intelligently
 eval "$(zoxide init zsh)"
+# zinit's own `alias zi=zinit` shadows zoxide's `zi` function; aliases beat functions.
+unalias zi 2>/dev/null
 
 # pretty shell prompt
 eval "$(starship init zsh)"
@@ -173,6 +178,9 @@ clip() {
 
 # Claude Code: launch with permission prompts bypassed
 alias claude='claude --dangerously-skip-permissions'
+
+# Cursor CLI: launch with permission prompts bypassed
+alias agent='agent --yolo'
 
 # glow: fill the terminal width by default (it otherwise wraps at 80). TTY-only, so
 # piped/redirected output keeps glow's default (stays reproducible). `command` avoids
