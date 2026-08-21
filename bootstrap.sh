@@ -90,6 +90,10 @@ fi
 read -r -a STOW_PKGS <<< "$(stow_set "$MACHINE")"
 echo "==> Stowing ($MACHINE): ${STOW_PKGS[*]}"
 run stow -v "${STOW_PKGS[@]}"
+# wsl-open.desktop: refresh the user MIME cache so xdg-open finds it before $BROWSER.
+if [[ "$MACHINE" == wsl ]] && command -v update-desktop-database >/dev/null; then
+  run update-desktop-database "${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+fi
 
 # In dry-run, the install plan (pacman layers + stow) is the useful preview; the
 # remaining steps are idempotent setup. Summarize what's left and stop here.

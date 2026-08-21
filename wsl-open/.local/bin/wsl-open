@@ -1,0 +1,65 @@
+#!/bin/sh
+# Open http(s) in Windows Firefox; everything else via the Windows default app.
+# Windows binaries are called by full path so appendWindowsPath can stay false.
+
+FIREFOX="/mnt/c/Program Files/Mozilla Firefox/firefox.exe"
+PS="/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+
+detach() { ( "$@" >/dev/null 2>&1 & ) & }
+
+win_start() {
+    OPEN_TARGET="$1" detach "$PS" -NoProfile -NonInteractive -Command 'Start-Process $env:OPEN_TARGET'
+}
+
+firefox_open() {
+    detach "$FIREFOX" "$1"
+}
+
+decode_file_url() {
+    path="${1#file://}"
+    path="${path#localhost}"
+    printf '%b' "$(printf '%s' "$path" | sed 's/%\(..\)/\\x\1/g')"
+}
+
+[ $# -eq 1 ] || { echo "usage: wsl-open <url|file>" >&2; exit 1; }
+[ -x "$FIREFOX" ] || { echo "wsl-open: firefox.exe not found at $FIREFOX" >&2; exit 1; }
+[ -x "$PS" ] || { echo "wsl-open: powershell.exe not found at $PS" >&2; exit 1; }
+
+target="$1"
+
+case "$target" in
+    https://*|http://*|about:*)
+        firefox_open "$target"
+        exit 0
+        ;;
+    mailto:*|ftp:*|ms-*|slack:*|vscode:*|cursor:*)
+        win_start "$target"
+        exit 0
+        ;;
+    file://*)
+        path=$(decode_file_url "$target")
+        if [ -e "$path" ]; then
+            target="$path"
+        else
+            win_start "$target"
+            exit 0
+        fi
+        ;;
+esac
+
+if [ -e "$target" ]; then
+    abs=$(realpath "$target")
+    win=$(wslpath -aw "$abs")
+    case "$abs" in
+        *.html|*.htm|*.xhtml|*.HTML|*.HTM|*.XHTML)
+            firefox_open "file:///$(printf '%s' "$win" | tr '\\' '/')"
+            ;;
+        *)
+            win_start "$win"
+            ;;
+    esac
+    exit 0
+fi
+
+win_start "$target"
+exit 0

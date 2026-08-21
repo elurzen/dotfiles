@@ -10,7 +10,7 @@ detect_machine() {
 # Echo the stow packages for a machine type.
 stow_set() {
   case "$1" in
-    wsl)     echo "btop git starship tmux zsh" ;;
+    wsl)     echo "btop git starship tmux wsl-open zsh" ;;
     desktop) echo "alacritty btop git hypr mako ncspot starship tmux vesktop waybar zsh" ;;
     *) return 1 ;;
   esac

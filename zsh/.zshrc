@@ -216,5 +216,9 @@ function zvm_after_init() {
 
 export PATH="$HOME/.local/bin:$PATH"
 
+# WSL: xdg-open's built-in Windows backend keys off explorer.exe on PATH.
+# appendWindowsPath stays false; wsl-open (stowed on WSL) is the fallback $BROWSER.
+[[ -x $HOME/.local/bin/wsl-open ]] && export BROWSER="$HOME/.local/bin/wsl-open"
+
 # Machine-local overrides (e.g. VS Code path on the work box) - not stowed/committed.
 [[ -f $HOME/.zshrc.local ]] && source "$HOME/.zshrc.local"

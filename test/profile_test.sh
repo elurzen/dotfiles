@@ -5,7 +5,7 @@ source ./assert.sh
 source ../lib/profile.sh
 
 # stow_set
-assert_eq "$(stow_set wsl)" "btop git starship tmux zsh" "wsl stow set"
+assert_eq "$(stow_set wsl)" "btop git starship tmux wsl-open zsh" "wsl stow set"
 assert_eq "$(stow_set desktop)" "alacritty btop git hypr mako ncspot starship tmux vesktop waybar zsh" "desktop stow set"
 
 # pkglist_files: point DOTFILES_DIR at a temp fixture

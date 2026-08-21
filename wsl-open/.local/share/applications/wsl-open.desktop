@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Windows default app (WSL)
+Comment=Open files and URLs with the Windows host (Firefox for http/https)
+Exec=/home/vanzen/.local/bin/wsl-open %u
+Terminal=false
+NoDisplay=true
+MimeType=text/html;text/csv;text/plain;text/markdown;text/xml;text/calendar;text/vcard;text/css;application/pdf;application/epub+zip;application/postscript;application/rtf;application/json;application/xml;application/zip;application/gzip;application/x-tar;application/x-7z-compressed;application/vnd.rar;application/vnd.ms-cab-compressed;application/x-iso9660-image;application/msword;application/vnd.ms-excel;application/vnd.ms-powerpoint;application/vnd.ms-outlook;application/vnd.ms-publisher;application/vnd.ms-htmlhelp;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.spreadsheet;application/vnd.oasis.opendocument.presentation;application/vnd.ms-visio.drawing;application/onenote;application/x-msdownload;application/x-msi;application/x-ms-shortcut;application/x-mswinurl;application/x-ms-regedit;message/rfc822;image/png;image/jpeg;image/gif;image/webp;image/svg+xml;image/bmp;image/tiff;image/vnd.microsoft.icon;image/vnd.adobe.photoshop;audio/mpeg;audio/x-wav;audio/flac;audio/mp4;video/mp4;video/webm;video/x-matroska;video/x-msvideo;video/quicktime;font/ttf;font/otf;inode/directory;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/about;x-scheme-handler/ftp;x-scheme-handler/mailto;x-scheme-handler/file;
