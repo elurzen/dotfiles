@@ -137,6 +137,8 @@ zinit light zsh-users/zsh-history-substring-search
 # after, and clobber the eza ll/la aliases defined below.
 zinit snippet "OMZP::git"            # git aliases without full OMZ
 zinit snippet "OMZP::common-aliases" # ll, la, grep colors, etc.
+# Agent shells have no TTY, so the -i prompts these add hang until timeout.
+[[ -n $CLAUDECODE ]] && unalias rm cp mv 2>/dev/null
 zinit wait lucid from"gh-r" as"program" mv"eza* -> eza" for @eza-community/eza  # modern ls
 
 ############################################ Aliases ############################################
