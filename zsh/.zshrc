@@ -184,6 +184,52 @@ alias claude='claude --dangerously-skip-permissions'
 # Cursor CLI: launch with permission prompts bypassed
 alias agent='agent --yolo'
 
+# grok's GitLab and Jira MCP servers decrypt pass at startup. pinentry-curses on
+# this pane fights the TUI, so a cold gpg-agent has to unlock before grok starts.
+_pass_agent_cached() {
+  local gpgid
+  [[ -f $HOME/.password-store/.gpg-id ]] || return 1
+  gpgid=$(head -n 1 "$HOME/.password-store/.gpg-id") || return 1
+  [[ -n $gpgid ]] || return 1
+  echo test \
+    | gpg --batch --yes --quiet --trust-model always --encrypt --recipient "$gpgid" 2>/dev/null \
+    | gpg --batch --quiet --pinentry-mode error --decrypt >/dev/null 2>&1
+}
+
+_grok_pass_unlock() {
+  local rcfile script rc
+  rcfile=$(mktemp "${TMPDIR:-/tmp}/grok-unlock.XXXXXX") || return 1
+  script=$(mktemp "${TMPDIR:-/tmp}/grok-unlock-cmd.XXXXXX") || { command rm -f "$rcfile"; return 1; }
+  cat > "$script" <<'EOF'
+#!/bin/sh
+export GPG_TTY=$(tty)
+export PASSWORD_STORE_ENABLE_EXTENSIONS=true
+pass unlock
+echo $? > "$1"
+EOF
+  if [[ -n $TMUX ]]; then
+    print -P '%F{220}pass is locked. Unlock in the popup, then grok starts.%f'
+    tmux display-popup -E -h 40% -w 70% -T 'pass unlock' "sh ${(q)script} ${(q)rcfile}" || true
+  else
+    sh "$script" "$rcfile"
+    stty sane 2>/dev/null || true
+  fi
+  rc=$(<"$rcfile") 2>/dev/null || rc=1
+  command rm -f "$rcfile" "$script"
+  [[ $rc == <-> ]] || rc=1
+  if (( rc != 0 )); then
+    print -u2 -- "pass unlock failed. grok not started."
+    return "$rc"
+  fi
+}
+
+grok() {
+  if [[ -t 1 ]] && (( $+commands[pass] )) && ! _pass_agent_cached; then
+    _grok_pass_unlock || return $?
+  fi
+  command grok "$@"
+}
+
 # glow: fill the terminal width by default (it otherwise wraps at 80). TTY-only, so
 # piped/redirected output keeps glow's default (stays reproducible). `command` avoids
 # recursing into this function; an explicit -w/--width you pass still wins (last flag).
